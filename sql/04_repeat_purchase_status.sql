@@ -1,0 +1,16 @@
+-- =============================================================================
+-- 04_repeat_purchase_status.sql
+-- Title:            Customer Purchase Summary and Repeat Buyer Status
+-- Business Purpose: Build the master customer-level summary including repeat
+--                   buyer flag, order counts, revenue, and time to second
+--                   purchase.
+-- Expected Output:  One row per customer.
+-- Planned Fields:   customer_id, total_orders, total_revenue,
+--                   first_purchase_date, last_purchase_date,
+--                   second_purchase_date, days_to_second_purchase,
+--                   is_repeat_buyer, days_since_last_purchase, buyer_status
+-- Dependency:       Requires 02_data_cleaning.sql and
+--                   03_customer_first_purchase.sql.
+-- TODO:             Write only after schema validation and confirming the
+--                   grain of the orders table in the real dataset.
+-- =============================================================================

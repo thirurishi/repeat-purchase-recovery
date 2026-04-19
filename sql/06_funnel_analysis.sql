@@ -1,0 +1,14 @@
+-- =============================================================================
+-- 06_funnel_analysis.sql
+-- Title:            Purchase Funnel Analysis
+-- Business Purpose: Analyse the customer journey from first to multi-purchase.
+--                   Measure conversion rates between purchase stages and time
+--                   gaps between consecutive orders.
+-- Expected Output:  Stage-level aggregation (one row per funnel stage) and
+--                   inter-purchase time summary by order sequence.
+-- Planned Fields:   funnel_stage, customers, pct_of_all_customers,
+--                   order_seq, median_days_since_prev_order
+-- Dependency:       Requires 04_repeat_purchase_status.sql.
+-- TODO:             Write only after confirming order history depth and
+--                   customer purchase frequency in the real dataset.
+-- =============================================================================

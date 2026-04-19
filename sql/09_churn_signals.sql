@@ -1,0 +1,15 @@
+-- =============================================================================
+-- 09_churn_signals.sql
+-- Title:            Churn Signal Feature Table
+-- Business Purpose: Identify leading indicators of churn and produce a feature
+--                   table for input into the Python churn model.
+-- Expected Output:  One row per customer with behavioural features and
+--                   churn / at-risk labels.
+-- Planned Fields:   customer_id, total_orders, total_revenue,
+--                   days_since_last_purchase, avg_ipt_days, std_ipt_days,
+--                   distinct_categories, rfm_scores, is_churned, is_at_risk
+-- Dependency:       Requires 04_repeat_purchase_status.sql,
+--                   07_segmentation.sql, and 08_clv_analysis.sql.
+-- TODO:             Write only after schema validation and after the churn
+--                   inactivity threshold has been decided from the real dataset.
+-- =============================================================================
