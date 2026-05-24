@@ -131,8 +131,7 @@ repeat-purchase-recovery/
 │   ├── data_model.md
 │   ├── metric_definitions.md
 │   ├── business_recommendations.md
-│   ├── dashboard_plan.md
-│   └── analysis_qa.md
+│   └── dashboard_plan.md
 ├── sql/               6 SQL files — the full pipeline
 ├── notebooks/         01–06: data audit → EDA → cohorts → segmentation → CLV/churn → scenarios
 ├── images/            26 saved charts referenced by docs and dashboard
