@@ -1,130 +1,184 @@
 # Repeat Purchase Recovery
+### A Product Analytics Case Study | Olist Brazilian E-Commerce
 
-A product analytics case study on a Brazilian e-commerce dataset (Olist, Sep 2016 – Aug 2018) that answers a single question: **why don't customers come back, and what would it take to change that?**
+**Why don't customers come back — and what would it take to change that?**
 
----
-
-## Business Problem
-
-Across **93,358 customers** and **96,478 delivered orders**, only **3.0%** of customers ever placed a second order. 90,557 customers bought once and were never seen again.
-
-A platform whose revenue model rests almost entirely on new-customer acquisition — rather than retention of existing ones — is exposed to rising acquisition costs and capped lifetime value. This project identifies the structural drivers of that gap and quantifies what closing it would be worth.
+An end-to-end product analytics project investigating repeat purchase behavior, customer retention, lifetime value, and churn signals using the Olist Brazilian E-Commerce dataset. The objective is to translate transactional data into actionable retention strategies and quantify their potential business impact.
 
 ---
 
-## Why It Matters
+## Executive Snapshot
 
-- **Repeat buyers spent 58% more over 90 days** than one-time buyers (R$253 vs R$161).
-- **50% of all eventual repeat buyers returned within 29 days** of their first order — meaning the intervention window is narrow and currently unused.
-- Even modest improvements (a 1pp lift in single-item repeat rate, partial closure of the holiday-cohort retention gap) translate into hundreds of incremental repeat buyers per year against a base of only 2,801.
+| 93,358 | 96,478 | 3.0% | 2,801 |
+|:---:|:---:|:---:|:---:|
+| Unique customers | Delivered orders | Lifetime repeat rate | Repeat buyers |
 
----
+| 29 days | 2.28% | 58% | ~928 |
+|:---:|:---:|:---:|:---:|
+| Median time to return | 90-day repeat rate | Higher 90-day spend among repeat buyers | Potential incremental repeat buyers |
 
-## Dataset
-
-Olist Brazilian E-Commerce Public Dataset (Kaggle): 9 CSVs covering orders, customers, items, payments, reviews, products, sellers, and geolocation.
-
-- **Scope used:** 7 of 9 files (sellers and geolocation excluded from this pass).
-- **Filter:** Only `order_status = 'delivered'` orders (96,478 of 99,441).
-- **Person key:** `customer_unique_id` (the raw `customer_id` is order-scoped and would make every customer look one-time).
-- **Date range:** September 2016 – August 2018 (~23 months).
+<sub>Metrics are based on the historical dataset and the project's analytical definitions. Scenario results are directional estimates, not forecasts.</sub>
 
 ---
 
-## Tools
+## 01 — The Business Challenge
 
-- **SQLite** — full analytical pipeline lives here
-- **Python** — pandas, numpy, matplotlib (in notebooks)
-- **Jupyter** — exploratory and visual analysis (NB01–NB06)
-- **Power BI** — interactive dashboard (`.pbix` file)
+Only around **3% of customers placed a second order** during the observed period. Approximately 90,557 customers purchased once and did not return within the observed dataset.
+
+This creates a fundamental retention challenge: the business relies heavily on acquiring new customers rather than generating subsequent purchases from existing ones.
+
+The analysis investigates three questions:
+
+- **When** are customers most likely to return?
+- **Which behavioral and operational signals** are associated with repeat purchasing?
+- **Where should the business focus** its retention efforts to maximize reach and potential value?
+
+## 02 — Why Retention Matters
+
+| Business signal | Observed result | Implication |
+|---|---|---|
+| Customer value | R$253 vs. R$161 in 90-day revenue | Repeat buyers generate more observed revenue |
+| Return timing | 29-day median time to second order | Early post-purchase engagement deserves attention |
+| First-order basket | 2.15% repeat rate for single-item buyers | A large customer segment has low observed repeat purchasing |
+| Basket-size comparison | 5.38% repeat rate for 6+ item buyers | Larger baskets are associated with higher repeat rates |
+| Seasonal cohorts | 1.55% vs. 2.42% retention | Holiday-acquired cohorts show a measurable retention gap |
+| Delivery experience | 2.05% repeat rate for late deliveries vs. 2.30% for early deliveries | Delivery recovery is a potential retention opportunity |
+
+*These are observational findings. They identify associations, not proven causal effects.*
 
 ---
 
-## Architecture
+## 03 — Data & Technology
 
-A 6-layer SQL pipeline that turns raw CSVs into Power BI-ready views. Every layer ships with read-only validation queries (63 total, V1–V63).
+**Dataset:** [Olist Brazilian E-Commerce Public Dataset — Kaggle](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce)
 
+- **Period:** September 2016 – August 2018
+- **Source files:** 9 CSVs available; 7 used in this analytical pass
+- **Order scope:** Delivered orders only
+- **Customer identity:** `customer_unique_id`, rather than order-scoped `customer_id`
+
+### Technology stack
+
+`SQLite` · `SQL` · `Python` · `pandas` · `NumPy` · `Matplotlib` · `Jupyter Notebook` · `Power BI`
+
+---
+
+## 04 — Analytical Architecture
+
+The project uses a six-layer SQL pipeline to transform raw source data into validated analytical views for customer-level analysis and dashboard reporting.
+
+```text
+                    RAW OLIST CSV FILES
+                            │
+                            ▼
+               LAYER 1 — CLEANED BASE VIEWS
+                    6 SQL views
+                            │
+                            ▼
+               LAYER 2 — ORDER AGGREGATIONS
+                    2 SQL views
+                            │
+                            ▼
+               LAYER 3 — CUSTOMER-ORDER FACT
+                    1 SQL view
+                            │
+                            ▼
+               LAYER 4 — ORDER SEQUENCING
+                    1 SQL view
+                            │
+                            ▼
+               LAYER 5 — CUSTOMER-LEVEL MARTS
+                    6 SQL views
+                            │
+                            ▼
+               LAYER 6 — DASHBOARD VIEWS
+                    7 SQL views
+                            │
+                            ▼
+                  POWER BI REPORTING
 ```
-Raw CSVs (data/raw/)
-        │
-        ▼
-Layer 1  Cleaned base views (6)         02_data_cleaning.sql
-        │   orders_clean, customers_clean, order_items_clean,
-        │   order_payments_clean, order_reviews_clean, products_clean
-        ▼
-Layer 2  Order aggregations (2)         03_order_aggregations.sql
-        │   order_revenue, order_payment_total
-        ▼
-Layer 3  Central fact (1)               04_customer_order_fact.sql
-        │   customer_order_fact (one row per delivered order)
-        ▼
-Layer 4  Sequencing (1)                 05_order_sequence.sql
-        │   order_sequence (first/next order metadata via window fns)
-        ▼
-Layer 5  Customer-level marts (6)       06_customer_marts.sql
-        │   first_purchase_mart, repeat_status_mart, customer_clv,
-        │   retention_cohorts, segment_performance_mart, churn_signal_mart
-        ▼
-Layer 6  Dashboard views (7)            99_dashboard_views.sql
-            executive_kpi_summary, repeat_purchase_trend_monthly,
-            cohort_heatmap_source, segment_summary_dashboard,
-            clv_distribution_summary, churn_signal_summary,
-            repeat_vs_one_time_summary
-```
 
-20 SQLite views in total, all validated end-to-end.
+**Pipeline at a glance**
+
+- 6 analytical layers
+- 20 SQLite views
+- 63 read-only validation queries, labelled V1–V63
+- Customer-level repeat status, retention cohorts, CLV, behavioral segments, and churn signals
+
+The SQL pipeline separates data preparation, order-level calculations, customer-level metrics, and dashboard-ready outputs for easier validation and maintenance.
 
 ---
 
-## Key Findings
+## 05 — Key Findings
 
-1. **Extremely low repeat rate across every window.** Lifetime 3.0% · 90-day 2.28% · 60-day 1.96% · 30-day 1.59%. All windows right-censored to avoid inflating the denominator with recent customers.
+### 01. Repeat purchasing is consistently low
 
-2. **The return window is short and front-loaded.** Median time to second order is 29 days; 50% of repeat buyers return inside 30 days, 68% inside 90 days. After 30 days the probability of return drops sharply.
+The lifetime repeat rate is approximately 3.0%, with a 90-day repeat rate of 2.28%. The low return rate persists across multiple observation windows.
 
-3. **Single-item first orders are the structural bottleneck.** 90.1% of customers (84,151) place a single-item first order; they repeat at 2.15%. 2-item buyers repeat at 3.15%, 6+ item buyers at 5.38% — a 2.5× lift.
+### 02. The first 30 days are an important intervention window
 
-4. **Holiday-acquired cohorts retain worst.** November 2017 – January 2018 cohorts (~19,000 customers) retained at 1.55% vs 2.42% for mid-2017 cohorts — a 0.87pp gap that is calendrically predictable.
+The median time to second purchase is 29 days. Approximately 50% of eventual repeat buyers return within 30 days, and 68% return within 90 days.
 
-5. **Late delivery suppresses repeat behavior, but late-delivery customers are higher value.** Late-delivery repeat rate is 2.05% vs 2.30% for early delivery, yet their average lifetime revenue (R$178) exceeds the baseline — they're worth recovering, not writing off.
+### 03. Single-item first orders represent the largest opportunity
 
-6. **Review behavior is a clean leading indicator.** 14.7% of orders receive 1–2 star reviews; these customers repeat dramatically less. Review score is recorded on 99.2% of orders, so the signal is reliable.
+Around 84,151 customers — approximately 90.1% of the customer base — placed a single-item first order. Their observed repeat rate was 2.15%, compared with 5.38% for customers whose first order contained six or more items.
 
----
+### 04. Holiday-acquired cohorts show weaker retention
 
-## Business Recommendations
+November 2017–January 2018 cohorts retained at approximately 1.55%, compared with 2.42% for mid-2017 cohorts. This represents a 0.87 percentage-point gap.
 
-Three plays, ranked by reach × validated lift × feasibility. Full reasoning in [docs/business_recommendations.md](docs/business_recommendations.md).
+### 05. Late delivery is associated with lower repeat purchasing
 
-| Priority | Play | Target | Why |
-|---|---|---|---|
-| 1 | **Cross-sell program for single-item buyers** | 84,151 customers (90% of base) | Largest reach. 1pp lift to 2-item buyer behavior is a validated, structural gap. |
-| 2 | **Holiday-cohort re-engagement** | ~19,000 customers/year (Nov–Jan) | Calendrically predictable, addressable in advance, 0.87pp retention gap to close. |
-| 3 | **Delivery-delay recovery touchpoint** | 7,428 customers/year | Smallest reach but highest per-customer value (R$178 lifetime) and real-time identifiable. |
+Customers receiving orders late had a 2.05% repeat rate, compared with 2.30% for early deliveries. However, the late-delivery segment showed average lifetime revenue of approximately R$178, suggesting a potentially valuable recovery audience.
 
----
+### 06. Review scores offer a useful diagnostic signal
 
-## Scenario Analysis
-
-Three what-if scenarios stress-test what each play would be worth at medium-case assumptions. **These are directional estimates, not forecasts.** All per-buyer revenue is grounded in validated benchmarks from the CLV analysis — not aggregate revenue × buyer count.
-
-| Scenario | Assumption | Incremental Repeat Buyers | Revenue Multiplier | Horizon |
-|---|---|---|---|---|
-| Cross-Sell | +1.0pp lift on single-item buyers | ~841 | R$92.34 (repeat − one-time 90-day uplift) | 90-day |
-| Delivery Recovery | 50% closure of late-delivery gap | ~9 | R$178.10 (late-delivery lifetime) | Lifetime |
-| Holiday Cohort | 50% closure of holiday retention gap | ~78 | R$253.10 (repeat buyer 90-day) | 90-day |
-
-**Combined medium-case:** ~928 incremental repeat buyers — a 33% uplift against the current base of 2,801. Full methodology in [notebooks/06_scenario_analysis.ipynb](notebooks/06_scenario_analysis.ipynb).
+Approximately 14.7% of orders received one- or two-star reviews. Review behavior provides an additional way to investigate customer experience alongside delivery performance and purchasing patterns.
 
 ---
 
-## Repository Structure
+## 06 — From Analysis to Action
 
-```
+The recommendations prioritize the size of the addressable audience, the observed retention gap, and practical feasibility.
+
+| Priority | Recommended play | Target audience | Strategic rationale |
+|:---:|---|---:|---|
+| 01 | Cross-sell after single-item purchases | 84,151 customers | Address the largest identified customer segment |
+| 02 | Holiday-cohort re-engagement | ~19,000 customers | Target cohorts with weaker observed retention |
+| 03 | Delivery-delay recovery | 7,428 customers | Investigate and recover customers affected by late deliveries |
+
+**Proposed activation window:** Focus early retention interventions around the first 30 days after the initial purchase, informed by the observed timing of second orders.
+
+Detailed rationale: [`docs/business_recommendations.md`](docs/business_recommendations.md)
+
+---
+
+## 07 — Scenario Analysis
+
+The scenario model estimates the potential impact of three retention initiatives under explicitly stated assumptions.
+
+| Scenario | Assumption | Incremental repeat buyers | Revenue benchmark |
+|---|---|---:|---|
+| Cross-sell | +1 percentage-point lift among single-item buyers | ~841 | R$92.34 per incremental buyer |
+| Delivery recovery | 50% closure of the late-delivery retention gap | ~9 | R$178.10 lifetime revenue benchmark |
+| Holiday re-engagement | 50% closure of the holiday-cohort retention gap | ~78 | R$253.10 90-day revenue benchmark |
+| **Combined medium case** | **All three scenarios** | **~928** | **Directional estimate** |
+
+The combined scenario represents approximately a **33% increase over the current base of 2,801 repeat buyers**.
+
+These scenarios are sensitivity analyses, not forecasts. The revenue benchmarks use different definitions and time horizons, so they should not be added together as a single revenue estimate without further modelling.
+
+Methodology: [`notebooks/06_scenario_analysis.ipynb`](notebooks/06_scenario_analysis.ipynb)
+
+---
+
+## 08 — Repository Guide
+
+```text
 repeat-purchase-recovery/
 ├── data/
-│   ├── raw/           9 source Olist CSVs
-│   └── olist.db       SQLite database (pipeline materialised here)
+│   ├── raw/                 Source Olist CSVs
+│   └── olist.db             Local analytical database
 ├── docs/
 │   ├── project_brief.md
 │   ├── data_inventory.md
@@ -132,29 +186,41 @@ repeat-purchase-recovery/
 │   ├── metric_definitions.md
 │   ├── business_recommendations.md
 │   └── dashboard_plan.md
-├── sql/               6 SQL files — the full pipeline
-├── notebooks/         01–06: data audit → EDA → cohorts → segmentation → CLV/churn → scenarios
-├── images/            26 saved charts referenced by docs and dashboard
-├── powerbi/           repeat_purchase_recovery.pbix
-└── presentation/      case_study_summary.md
+├── sql/                     SQL pipeline and validation
+├── notebooks/               NB01–NB06 analytical workflow
+├── images/                  Charts and visual outputs
+├── powerbi/                 Power BI report
+└── presentation/            Case study summary
 ```
 
----
-
-## Limitations
-
-- **Observational, not causal.** All findings describe associations in historical data. No experimental design or A/B test is implied.
-- **No marketing or session data.** The dataset has no traffic, email, ad-spend, or on-site behavior — drivers of repeat are inferred from transactional features only.
-- **Right-censoring on the trailing edge.** Customers near the dataset end date have insufficient exposure for long-window repeat flags; their counts are excluded from those denominators (not zero-filled).
-- **Two-year window.** Brazilian e-commerce in 2016–2018 may not generalize to other markets or to today's competitive context.
-- **Scenarios are not forecasts.** They quantify *what would happen if* a stated uplift were achieved — not the probability of achieving it.
+*The structure above describes the intended project organization. Check the actual repository contents before treating every listed file as present.*
 
 ---
 
-## Future Improvements
+## 09 — Limitations & Assumptions
 
-- Time-to-second-purchase survival model (Kaplan-Meier or Cox) instead of windowed flags.
-- A/B test design for the cross-sell play (treatment cohort + holdout).
-- Incorporate seller-side and geolocation data for supply-side drivers of retention.
-- Cost-of-intervention model so revenue uplift can be translated into ROI.
-- Refresh against current-year data to confirm 2017-era patterns still hold.
+- **Observational analysis:** Associations do not establish causality.
+- **No marketing attribution:** Traffic, advertising spend, email engagement, and website session data are unavailable.
+- **Right-censoring:** Customers near the end of the dataset have less time to place a subsequent order. Windowed repeat rates account for this exposure limitation.
+- **Historical context:** The dataset covers 2016–2018 and may not represent current customer behavior.
+- **Scenario uncertainty:** Estimated lifts are assumptions used to explore potential impact, not validated intervention outcomes.
+
+---
+
+## 10 — Next Steps
+
+- Use Kaplan–Meier or Cox survival analysis to model time to second purchase.
+- Design an A/B test with treatment and holdout groups for the cross-sell initiative.
+- Incorporate seller and geolocation data to investigate supply-side drivers.
+- Estimate intervention costs and incremental contribution margin to quantify ROI.
+- Validate the findings against more recent e-commerce data.
+
+---
+
+## Project Takeaway
+
+**The central opportunity is to move from acquisition-led growth toward measurable customer retention.**
+
+By combining SQL-based data modelling, customer-level behavioral analysis, cohort retention, lifetime-value benchmarks, and scenario modelling, this project translates a low repeat-purchase rate into a prioritized set of testable business initiatives.
+
+*Built with SQL, Python, Jupyter, SQLite, and Power BI.*
